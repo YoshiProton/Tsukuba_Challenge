@@ -18,8 +18,8 @@ class D435Listener:
         self.infrared_topic = '/device_0/sensor_0/Infrared_1/image/data'
 
         self.image_sub = rospy.Subscriber(self.image_topic, Image, self.image_callback)
-        #self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
-        #self.infrared_sub = rospy.Subscriber(self.infrared_topic, Image, self.ir_callback)
+        self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
+        self.infrared_sub = rospy.Subscriber(self.infrared_topic, Image, self.ir_callback)
         self.bridge = CvBridge()
     
     def image_callback(self, data):
@@ -27,24 +27,24 @@ class D435Listener:
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
             print(e)
-        cv2.imshow('image', cv_image)
-        cv2.waitKey(1)
+        #cv2.imshow('image', cv_image)
+        #cv2.waitKey(1)
 
     def depth_callback(self, data):
         try:
             cv_depthimage = self.bridge.imgmsg_to_cv2(data, "passthrough")
         except CvBridgeError as e:
             print(e)
-        cv2.imshow('image', cv_depthimage)
-        cv2.waitKey(1)
+        #cv2.imshow('image', cv_depthimage)
+        #cv2.waitKey(1)
 
     def ir_callback(self, data):
         try:
             cv_irimage = self.bridge.imgmsg_to_cv2(data, "passthrough")
         except CvBridgeError as e:
             print(e)
-        cv2.imshow('image', cv_irimage)
-        cv2.waitKey(1)
+        #cv2.imshow('image', cv_irimage)
+        #cv2.waitKey(1)
 
 if __name__ == '__main__':
     rospy.init_node('d435_listener', anonymous=True)

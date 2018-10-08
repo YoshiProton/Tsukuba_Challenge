@@ -1,0 +1,170 @@
+
+
+■ORB-SLAMの導入 
+
+https://noshumi.blogspot.com/2016/12/orb-slam.html
+
+インストール
+
+まず，必要なものを持ってきます．
+
+$sudo apt-get install libboost-all-dev
+$sudo apt-get install libsuitesparse-dev
+$sudo apt-get install libblas-dev
+$sudo apt-get install liblapack-dev
+$sudo apt-get install libeigen3-dev
+$git clone https://github.com/raulmur/ORB_SLAM.git ORB_SLAM
+
+できたORB_SLAMというフォルダに ROS_PACKAGE_PATHを通す。すなわち，
+
+pico ~/.bashrc
+で
+.bashrcを開いて
+
+export ROS_PACKAGE_PATH=~/ORB_SLAM2:$ROS_PACKAGE_PATH
+
+と一番下に書いて保存．
+
+
+Pangolin Installed.
+Check the other build dependency
+
+
+
+
+次にThirdparty/g2o/に移動して
+$mkdir build
+$cd build
+$cmake .. -DCMAKE_BUILD_TYPE=Release
+$make
+ここでThirdparty/g2o/CMakeLists.txtの97、98行目をPCに最適になるよういじるとパフォーマンスが上がるがとりあえずデフォルト
+
+Thirdparty/DBoW2/に移動して
+$mkdir build
+$cd build
+$cmake .. -DCMAKE_BUILD_TYPE=Release
+$make
+ここでThirdparty/DBoW2/CMakeLists.txtの4,5行目をPCに最適になるよういじるとパフォーマンスが上がるがとりあえずデフォルト
+
+ORB_SLAMに移動
+ROSのindigoなのでmanifest.xmlのopencv2依存をコメントアウト
+$mkdir build
+$cd build
+$cmake .. -DROS_BUILD_TYPE=Release
+$make
+CMakeLists.txtの12,13行目をPCに最適になるよういじるとパフォーマンスが上がるがとりあえずデフォルト
+
+
+ORB_SLAM/Data/ORBvoc.txt.tar.gzを解凍しておく
+
+さあ，これで終了です．
+
+ROSではビルドはCMakeLists.txtだけによるので，ROSのビルドシステム，catkinやrosbuildを使わずにもビルドできたことがわかると思います．
+
+カメラで実行
+
+ROS起動
+$roscore
+
+本体の実行
+$rosrun ORB_SLAM ORB_SLAM PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
+デフォルトでは
+$rosrun ORB_SLAM ORB_SLAM /Data/ORBvoc.txt  /Data/Settings.yaml
+とすればよい．
+ORB-SLAMの現在フレームの表示
+$rosrun image_view image_view image:=/ORB_SLAM/Frame _autosize:=true
+
+/camera/image_rawに動画を渡す。とりあえずusbカメラから渡すには
+$rosrun usb_cam usb_cam_node __name:=camera
+
+usbカメラの使い方はLSD-SLAMをROSで試す2-カメラの設定とキャリブレーション-を参考
+
+
+ORB-SLAMマップ表示
+$rosrun rviz rviz -d Data/rviz.rviz
+これでORB-SLAMの初期化が終了したらFixedFrameをORB_SLAM/Worldにすること。
+また、Add→By topic→→/ORB_SLAM/Map/Makerを押さないと表示されないので注意。
+＊ROSがFuerteなら$rosrun rviz rviz -d Data/rviz.vcg
+
+データセットで実行
+
+例えばLSD_room.bagを用いる場合
+LSD_room.bagについてはLSD-SLAMをROSで試す1-インストールとビルドとクイックスタート-を参考
+
+実行時に
+$rosrun ORB_SLAM ORB_SLAM /Data/ORBvoc.txt  /Data/Settings.yaml /camera/image_raw:=/image_raw
+としてください
+
+
+これはLSD_room.bagの出力が/image_rawなのでORB SLAM内の/camera/image_rawをimage_rawで読み替える必要があるためです。
+
+入力は
+$rosbag play ~/LSD_room.bag
+(LSD_room.bagがHomeにある場合)とすします。
+~以降の部分は自分がLSD_room.bag置いたところに変えてください．
+
+
+****
+Caution
+
+In my case, i needed to remove '-j' option, when execute make
+******
+
+
+
+build_ros ERROR
+---------------------------------------
+[ 11%] Linking CXX executable ../RGBD
+/usr/bin/ld: CMakeFiles/RGBD.dir/src/ros_rgbd.cc.o: シンボル '_ZN5boost6system15system_categoryEv' への未定義参照です
+/usr/lib/x86_64-linux-gnu/libboost_system.so: error adding symbols: DSO missing from command line
+collect2: error: ld returned 1 exit status
+CMakeFiles/RGBD.dir/build.make:212: ターゲット '../RGBD' のレシピで失敗しました
+make[2]: *** [../RGBD] エラー 1
+CMakeFiles/Makefile2:67: ターゲット 'CMakeFiles/RGBD.dir/all' のレシピで失敗しました
+make[1]: *** [CMakeFiles/RGBD.dir/all] エラー 2
+Makefile:127: ターゲット 'all' のレシピで失敗しました
+make: *** [all] エラー 2
+--------------------------------------
+
+->SOlution
+https://github.com/raulmur/ORB_SLAM2/issues/490
+
+Example/ROS/CMakeLists.txt
+set(LIBS
+${OpenCV_LIBS}
+${EIGEN3_LIBS}
+${Pangolin_LIBRARIES}
+${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
+${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
+${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
+-lboost_system
+)
+
+put -lboost_system at the end
+
+
+
+
+
+**Other Useful sites
+
+http://blog.livedoor.jp/tmako123-programming/archives/50385715.html
+
+http://ei0124.blog.fc2.com/blog-entry-21.html
+
+https://qiita.com/nnn112358/items/1087d5b0e4df5367f48b
+
+https://ensekitt.hatenablog.com/entry/visualslam4
+
+
+
+
+■ROSチュートリアル6-ROSlaunch-(ORB-SLAMを一発起動) 
+
+https://noshumi.blogspot.com/2017/09/ros6-roslaunch-orb-slam.html
+
+https://ensekitt.hatenablog.com/entry/visualslam5
+
+
+
+
